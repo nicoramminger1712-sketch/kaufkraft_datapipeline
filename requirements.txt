@@ -1,0 +1,15 @@
+# === Datengewinnung (API & Ingestion) ===
+requests>=2.31.0
+
+# === Datenverarbeitung & Analyse (Processing) ===
+pandas>=2.1.0
+numpy>=1.26.0
+
+# === Zeitreihenanalyse & Prognose (Modeling) ===
+statsmodels>=0.14.0
+pmdarima>=2.0.4
+scikit-learn>=1.3.0
+
+# === Visualisierung (Reporting) ===
+matplotlib>=3.8.0
+seaborn>=0.13.0
