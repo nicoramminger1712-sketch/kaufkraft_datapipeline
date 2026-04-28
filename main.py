@@ -127,5 +127,14 @@ if __name__ == "__main__":
     data = calculate_vpi(data)
     print(data)
     forecast_data = create_forecast(data, 5)
+    counter = 0
     for data in forecast_data:
+        if counter == 0:
+            print(f"================RLI================")
+        elif counter == 1:
+            print(f"================NLI================")
+        else:
+            print(f"================VPI================")
         print(data)
+        
+        counter += 1
