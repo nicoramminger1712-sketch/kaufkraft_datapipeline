@@ -19,7 +19,7 @@ def read_and_clean_data():
         DataFrame
     """
 
-    df = pd.read_csv('cleaned_data.csv', sep=";", skiprows=5, nrows=4)
+    df = pd.read_csv('initial_data.csv', sep=";", skiprows=5, nrows=4)
     #df = df.drop(['2007', '2008', '2009'], axis=1)
     df.rename(columns={'Unnamed: 0' : 'Indikator', 'Unnamed: 1' : 'Einheit'}, inplace=True)
     df.loc[1, 'Indikator'] = 'Reallohnveränderung zum Vorjahr'
@@ -92,13 +92,34 @@ def create_forecast(df, years):
     forecast_nli, conf_int_nli = model_nli.predict(n_periods=years, return_conf_int=True)
     forecast_vpi, conf_int_vpi = model_vpi.predict(n_periods=years, return_conf_int=True)
 
-    # RLI = (NLI / VPI) * 100
+    # RLI wird über Formel und nicht ARIMA ermittelt
+    arr_forecast_nli = np.array(forecast_nli)
+    arr_forecast_vpi = np.array(forecast_vpi)
     forecast_rli = (np.array(forecast_nli) / np.array(forecast_vpi)) * 100
 
-    conf_int_rli_low = (conf_int_nli[:, 0] / conf_int_vpi[:, 1]) * 100
-    conf_int_rli_high = (conf_int_nli[:, 1] / conf_int_vpi[:, 0]) * 100
+    # Konfidenzintervalle des RLI werden mittels Monte-Carlo-Simulation
+    se_nli = (conf_int_nli[:, 1] - conf_int_nli[:, 0]) / (2 * 1.96)
+    se_vpi = (conf_int_vpi[:, 1] - conf_int_vpi[:, 0]) / (2 * 1.96)
 
+    conf_int_rli_low = []
+    conf_int_rli_high = []
+
+    # 10.000 mögliche Szenarien
+    for i in range(years):
+        sim_nli = np.random.normal(arr_forecast_nli[i], se_nli[i], 10000)
+        sim_vpi = np.random.normal(arr_forecast_vpi[i], se_vpi[i], 10000)
+        sim_rli = (sim_nli / sim_vpi) * 100
+        
+        # 95% Intervall
+        conf_int_rli_low.append(np.percentile(sim_rli, 2.5))
+        conf_int_rli_high.append(np.percentile(sim_rli, 97.5))
+
+    conf_int_rli_low = np.array(conf_int_rli_low)
+    conf_int_rli_high = np.array(conf_int_rli_high)
+
+    # Gemeinsamen Index für DataFrames
     last_year = int(df_nli.index[-1])
+    
     future_years = np.arange(last_year + 1, last_year + 1 + years)
 
     df_forecast_nli = pd.DataFrame({
