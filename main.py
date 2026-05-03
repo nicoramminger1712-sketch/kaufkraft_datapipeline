@@ -117,9 +117,8 @@ def create_forecast(df, years):
     conf_int_rli_low = np.array(conf_int_rli_low)
     conf_int_rli_high = np.array(conf_int_rli_high)
 
-    # Gemeinsamen Index für DataFrames
-    last_year = int(df_nli.index[-1])
     
+    last_year = int(df_nli.index[-1])
     future_years = np.arange(last_year + 1, last_year + 1 + years)
 
     df_forecast_nli = pd.DataFrame({
