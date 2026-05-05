@@ -14,7 +14,8 @@
    Windows:
 
    ```bash
-    venv/bin/actiavte.bat
+    venv/Scripts/actiavte.bat //mit cmd
+    venv/Scripts/activate.ps1 //mit powershell
    ```
 
    Linux / Mac OS:
