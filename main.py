@@ -1,6 +1,8 @@
 import pandas as pd
 import pmdarima as pm
 import numpy as np
+import matplotlib.pyplot as plt
+import os
 
 """
 +--------------------------------+
@@ -141,20 +143,100 @@ def create_forecast(df, years):
 
     return (df_forecast_rli, df_forecast_nli, df_forecast_vpi)
 
+def visualize_data(historic_data, future_data):
+    """
+    Erstellt für RLI, NLI und VPI jeweils ein Liniendiagramm mit historischen Daten,
+    der Prognose und den Konfidenzintervallen und speichert diese als PNG.
+    """
+    # Zuweisung der Datensätze aus dem future_data Tuple
+    df_forecast_rli, df_forecast_nli, df_forecast_vpi = future_data
+    
+    # Mapping der Indikatoren auf die Zeilenindizes in historic_data und die zukünftigen DataFrames
+    plot_configs = [
+        {'name': 'RLI', 'row_idx': 0, 'future_df': df_forecast_rli, 'title': 'Reallohnindex (2025=100)'},
+        {'name': 'NLI', 'row_idx': 2, 'future_df': df_forecast_nli, 'title': 'Nominallohnindex (2025=100)'},
+        {'name': 'VPI', 'row_idx': 4, 'future_df': df_forecast_vpi, 'title': 'Verbraucherpreisindex (2025=100)'}
+    ]
+    
+    # Historische Jahre für die X-Achse aus den Spaltennamen extrahieren
+    historic_years = pd.to_numeric(historic_data.columns[2:])
+    
+    for config in plot_configs:
+        name = config['name']
+        row_idx = config['row_idx']
+        future_df = config['future_df']
+        title = config['title']
+        
+        # Historische Werte extrahieren
+        historic_values = pd.to_numeric(historic_data.iloc[row_idx, 2:])
+        
+        # Zukünftige Jahre und Werte extrahieren
+        future_years = future_df.index
+        forecast_values = future_df['Prognose']
+        ci_lower = future_df['Unteres_Konfidenz_Intervall']
+        ci_upper = future_df['Oberes_Konfidenz_Intervall']
+        
+        # Diagramm initialisieren
+        plt.figure(figsize=(10, 6))
+        
+        # Historische Daten plotten
+        plt.plot(historic_years, historic_values, label='Historische Daten', color='#1f77b4', marker='o', linewidth=2)
+        
+        # Verbindungslinie zwischen dem letzten historischen Jahr und dem ersten Prognosejahr
+        last_hist_year = historic_years[-1]
+        last_hist_val = historic_values.iloc[-1]
+        plt.plot([last_hist_year, future_years[0]], [last_hist_val, forecast_values.iloc[0]], 
+                 color='#ff7f0e', linestyle='--', linewidth=2)
+        
+        # Prognose plotten
+        plt.plot(future_years, forecast_values, label='Prognose', color='#ff7f0e', marker='s', linestyle='--', linewidth=2)
+        
+        # Konfidenzintervall schattieren
+        plt.fill_between(future_years, ci_lower, ci_upper, color='#ff7f0e', alpha=0.2, label='95% Konfidenzintervall')
+        
+        # Diagramm formatieren
+        plt.title(f'Entwicklung und Prognose: {title}', fontsize=14, pad=15)
+        plt.xlabel('Jahr', fontsize=12)
+        plt.ylabel('Indexwert', fontsize=12)
+        plt.grid(True, linestyle=':', alpha=0.7)
+        plt.legend(loc='upper left')
+        
+        # X-Achse so anpassen, dass nur ganze Jahreszahlen angezeigt werden
+        all_years = list(historic_years) + list(future_years)
+        plt.xticks(all_years, rotation=45)
+        
+        # Layout optimieren, damit nichts abgeschnitten wird
+        plt.tight_layout()
+        
+        # Diagramm als PNG mit hoher Auflösung (300 dpi) abspeichern
+        filename = f'Prognose_{name}.png'
+        plt.savefig(filename, dpi=300)
+        plt.close() # Schließt den Plot, um Speicher freizugeben
+        
+        print(f"Diagramm erfolgreich gespeichert als: {filename}")
+
+
 
 if __name__ == "__main__":
     data = read_and_clean_data()
     data = calculate_vpi(data)
+    
+    print("================HISTORISCHE DATEN================")
     print(data)
+    
     forecast_data = create_forecast(data, 5)
     counter = 0
-    for data in forecast_data:
+    
+    # HIER: Laufvariable von 'data' zu 'forecast_df' geändert!
+    for forecast_df in forecast_data:
         if counter == 0:
             print(f"================RLI================")
         elif counter == 1:
             print(f"================NLI================")
         else:
             print(f"================VPI================")
-        print(data)
-        
+        print(forecast_df)
         counter += 1
+
+    # Jetzt enthält 'data' immer noch die historischen Werte und der Aufruf klappt
+    visualize_data(data, forecast_data)
